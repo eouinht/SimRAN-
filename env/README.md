@@ -57,5 +57,35 @@ S_t = \begin{bmatrix}
 \text{PRB Allocated}_{t} 
 \end{bmatrix}
 $$
+
 Đây là cách agent nhìn UE, UE không được quyền can thiệp vào tài nguyên hay quyết định mình được Handover mà nó đại diện cho 1 flow, RL dùng UE làm sample của policy chung, cái mà agent cần cải thiện. 
-Agent cần trả lời được: Nếu một UE có trạng thái như thế này thì nên hành xử với UE đó như thế nào.
+Agent cần trả lời được:
+
+    "Nếu một UE có trạng thái như thế này thì nên hành xử với UE đó như thế nào".
+- SINR: Đánh giá chất lượng liên kết, đây là thông số quan trọng nhất quyết định throughput và drop. Chi tiết được mô tả trong [Xem tại](/SimCore/README.md)
+- UE position: Phản ánh tinh mobility, giúp agent có thể biết UE đang đến gần biên cell, có nguy cơ cần Handover. UE position không thể hiện tọa độ của UE trong toàn mạng mà chỉ thể hiện tọa độ tương đối của UE trong cell đang chứa nó.
+- Serving Cell: Cho biết UE đang kết nối với cell nào. Giúp phân biệt RSRP serving với neighbor và quyết định Handover.
+- PRB Allocated: Phản ánh mức tài nguyên đang được cấp cho UE. Cho phép agent học khi nào cần tăng/giảm PRB.
+### 3.3 Reward Funtion: 
+$$ {R} = {Throughput} - \alpha \cdot Load - \beta \cdot Drop - \gamma \cdot HO
+$$
+* Throughput (Positive reward): Đại diện cho tốc độ dữ liệu hữu ích UE nhận được.
+- Phụ thuộc vào:
+    - SINR
+    - PRB được cấp
+- Đây là động lực chính để agent cải thiện QoS
+* Load Penalty: Phản ánh mức độ chiếm dụng tài nguyên cell
+$$ Load = {PRB\_{allocated} \over PRB\_{total}}
+$$ 
+- Nếu cấp quá nhiều tài nguyên cho UE này thì sẽ gây đói tài nguyên tại các điểm khác.
+- Load cao gây tắc nghẽn, delay, drop các UE khác.
+* Drop penalty: Đại diện cho Radio Link Failure (RLF), Qó violation nghiêm trọng.
+$$ Drop \in \{0, 1\}
+$$ 
+Đây là sự kiện ít xảy ra nhưng rất xấu nên cần phạt mạnh. Drop xảy ra khi:
+- SINR quá thấp
+- PRB không đủ
+- HO quá trễ, thất bại 
+* Handover penalty: Thực hiện HO gây ra trễ, ping-pong HO gây bất ổn định cho cell. Tuy nhiên khi HO hợp lí có thể giúp cải thiện SINR lâu dài cho UE.
+$$ HO \in \{0, 1\}
+
