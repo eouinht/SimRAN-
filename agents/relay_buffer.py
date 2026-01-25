@@ -2,17 +2,22 @@ import random
 from collections import deque
 import numpy as np
 
-class RelayBuffer:
-    def __init__(self, size=100000):
-        self.buffer = deque(maxlen=size)
+class ReplayBuffer:
+    def __init__(self, capacity=100000):
+        self.buffer = deque(maxlen=capacity)
         
-    def push(self, s, a, r, s2, d):
-        self.buffer.append((s, int(a), r, s2, d))
+    def push(self, state, action, reward, next_state, done):
+        self.buffer.append((state, action, reward, next_state, done))
     
-    def sample(self, batch):
-        samples = random.sample(self.buffer, batch)
-        S,A,R,S2,D = zip(*samples)
-        return np.array(S), np.array(A), np.array(R), np.array(S2), np.array(D)
-    
+    def sample(self, batch_size):
+        samples = random.sample(self.buffer, batch_size)
+        states, actions, rewards, next_states, dones = zip(*samples)
+        return (
+            np.array(states, dtype=np.float32),
+            np.array(actions, dtype=np.int64),
+            np.array(rewards, dtype=np.float32),
+            np.array(next_states, dtype=np.float32),
+            np.array(dones, dtype=np.float32)
+        )
     def __len__(self):
         return len(self.buffer)

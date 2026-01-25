@@ -4,3 +4,4 @@ logs/*.csv
 *.dll
 *.dylib
 /.venv/
+*.pt

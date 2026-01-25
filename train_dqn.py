@@ -1,75 +1,57 @@
-import gymnasium as gym
-import matplotlib.pyplot as plt
+
 from env.SimEnv import SimRANEnv
-from agents.algo import DQN
-import torch.optim as optim
-from agents.relay_buffer import RelayBuffer
+from agents.agent import DQNAgent
+from agents.relay_buffer import ReplayBuffer
 import torch
 import numpy as np
-import os
-import pandas as pd
-os.makedirs("logs", exist_ok=True)
+
+
+EPISODES = 500
+BATCH_SIZE = 64
+BUFFER_SIZE = 100000
+TARGET_UPDATE = 10
+MAX_STEPS = 300
+
+device = "cpu"
+
 env = SimRANEnv()
 
 state_dim = env.observation_space.shape[0]
 action_dim = env.action_space.n
 
-qnet = DQN(state_dim,action_dim)
-target = DQN(state_dim, action_dim)
-target.load_state_dict(qnet.state_dict())
+agent = DQNAgent(
+    state_dim=state_dim,
+    action_dim=action_dim,
+    device=device
+)
 
-optimizer = optim.Adam(qnet.parameters(), lr=1e-3)
-buffer = RelayBuffer()
-gamma = 0.99
-batch_size = 64
-epsilon = 1.0
-reward = []
-
-for ep in range(300):
-    log = []
-    s, _ = env.reset()
-    ep_reward = 0
+buffer = ReplayBuffer(BUFFER_SIZE)
+reward_log = []
     
-    for t in range(300):
-        if np.random.rand() < epsilon:
-            a = env.action_space.sample()
-        else:
-            with torch.no_grad():
-                a = torch.argmax(qnet(torch.tensor(s).float())).item()
+for ep in range(EPISODES):
+    state, _ = env.reset()
+    ep_reward = 0
+    for step in range(MAX_STEPS):
+        action = agent.select_action(state)
+        next_state, reward, done, _ , info = env.step(action)
+        buffer.push(state, action, reward, next_state, done)
+        state = next_state
+        ep_reward += reward
         
-        s2, r, done, _ , info = env.step(a)
-        buffer.push(s, a, r, s2, done)
-        s = s2
-        ep_reward += r
-        log.append(info)
+        if len(buffer) > BATCH_SIZE:
+            batch = buffer.sample(BATCH_SIZE)
+            agent.train_step(batch)
         
-        if len(buffer) > batch_size:
-            S, A, R, S2, D = buffer.sample(batch_size)
-            
-            S = torch.tensor(S).float()
-            A = torch.tensor(A).long()
-            # print(f"Hereeeeeeee{A.dtype}")
-            R = torch.tensor(R).float()
-            S2 = torch.tensor(S2).float()
-            D = torch.tensor(D).float()
-            q = qnet(S).gather(1, A.unsqueeze(1)).squeeze()
-            with torch.no_grad():
-                q2 = target(S2).max(1)[0]
-                
-            y = R + gamma*q2*(1-D)
-            loss = ((q-y)**2).mean()
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            
         if done:
             break
+    agent.decay_epsilon()
     
-    epsilon = max(0.05, epsilon*0.995)
-    pd.DataFrame(log).to_csv(f"logs/ep_all.csv", index=False)
-    
-    if ep%10 == 0:
-        target.load_state_dict(qnet.state_dict())
-        print(f"Episode {ep}, reward {ep_reward:.1f}")
-    
-    
+    if ep % TARGET_UPDATE == 0:
+        agent.update_target()
+    reward_log.append(ep_reward)
+    if ep % 10 == 0:
+        print(f"Episode {ep:4d} | Reward: {ep_reward:8.2f} | Epsilon: {agent.epsilon:.3f}")
+
+torch.save(agent.qnet.state_dict(), "dqn_simran.pt")
+np.save("train_rewards.npy", reward_log)
+print("Training finished!")

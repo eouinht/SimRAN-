@@ -88,4 +88,15 @@ $$
 - HO quá trễ, thất bại 
 * Handover penalty: Thực hiện HO gây ra trễ, ping-pong HO gây bất ổn định cho cell. Tuy nhiên khi HO hợp lí có thể giúp cải thiện SINR lâu dài cho UE.
 $$ HO \in \{0, 1\}
+$$
 
+Reward phản ánh trải nghiệm của một UE, không phải toàn mạng nhưng Agent phải học hành vi để có lợi cho mạng gián tiếp.
+
+| Nếu làm | Hậu quả |
+| :--- | :--- |
+| **Max PRB** | Load penalty |
+| **Không HO** | Drop penalty |
+| **HO liên tục** | HO penalty |
+| **Không cấp PRB** | Throughput thấp |
+
+* Có thể thêm delay penalty, energy cost vào reward. 

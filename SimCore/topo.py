@@ -6,12 +6,14 @@ class Topology:
         self.position = np.arange(n_cells)*isd
         self.min_x = self.position[0]
         self.max_x = self.position[-1]
-        
-    def move(self, position):
+    def wrap(self, position):
         L = self.max_x
         if position < self.min_x:
             return position + L
         if position > self.max_x:
             return position - L
-        return position        
+        return position      
+        
+    def move(self, position):
+        return self.wrap(position)
         
