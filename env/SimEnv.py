@@ -42,18 +42,25 @@ class SimRANEnv(gym.Env):
 
         act = self._decode_action(action)
         info = self.sim.step(act)
-
-        # -------- Reward
+        
+        throughput = info["throughput"]
+        sinr = info["sinr"]
+        ho = info["handover"]
+        drop = info["drop"]
+        
+        throughput_norm = throughput/150.0
+        sinr_norm = sinr / 60.0
+        # print(f"Truoc chuan hoa: Throughput: {throughput}, sinr: {sinr}, Ho: {ho}, Drop: {drop}\n")
         reward = (
-            1.5 * info["throughput"]
-            + 0.5 * info["sinr"]
-            - 2.0 * info["handover"]
-            - 5.0 * info["drop"]
+            1.2 * throughput_norm
+            + 0.3 * sinr_norm
+            - 2.0 * ho
+            - 5.0 * drop
         )
-
+        # print(f"Sau chuan hoa: Throughput: {throughput_norm}, sinr: {sinr_norm}, Ho: {ho}, Drop: {drop}\n")
         terminated = False
         truncated = self.step_count >= self.max_steps
-
+        # print(f"Reward={reward}\n")
         return self._get_state(info), reward, terminated, truncated, info     
     
     def reset(self, seed=None, options=None):
@@ -69,7 +76,7 @@ class SimRANEnv(gym.Env):
     def _get_state(self, info):
         # Return state vector
         
-        sinr = np.tanh(info["sinr"] / 10)
+        sinr = np.clip(info["sinr"] / 60.0, 0, 1)
 
         ue_position = self.sim.ue.position / self.sim.topo.max_x
         serving = info["serving"] / self.n_cells

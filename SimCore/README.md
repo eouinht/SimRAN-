@@ -27,8 +27,12 @@
 * Mobility -> HandOver trigger
 * Demand -> load stress lên scheduler
 ## 3.Channel - Kênh truyền sóng (đơn giản)
-* RSRP(Reference Signal Received Power) - Công suất tín hiệu tham chiếu nhận được: RSRP giảm theo khoảng cách
-* Noise
+* RSRP(Reference Signal Received Power) - Công suất tín hiệu tham chiếu nhận được: 
+    - RSRP giảm theo khoảng cách
+    - Đây không phải công thức chuẩn 3GPP, chỉ là công thức suy hao tuyến tính đơn giản
+   $$ RSRP(d) = P_o - k *d $$
+
+* Noise 
 * Interference từ cell khác
 * SINR(Signal to Interference plus Noise Ratio): Chỉ số đo lường tín hiệu.
     $$ SINR = {Psig \over [P(interf) + P(Noise)]} (dB) $$

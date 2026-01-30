@@ -7,7 +7,7 @@ class DQNAgent:
         self,
         state_dim, 
         action_dim,
-        lr=1e-3,
+        lr=1e-4,
         gamma=0.99,
         epsilon_start=1.0,
         epsilon_min = 0.05,

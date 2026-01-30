@@ -24,6 +24,7 @@ class SimCore:
         
         # CHANNEL:
         d = np.abs(self.topo.position - self.ue.position)
+        # print (f"d = {d} \n")
         rsrp = self.channel.rsrp(d)
         
         # HANDOVER:

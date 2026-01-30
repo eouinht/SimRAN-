@@ -14,9 +14,19 @@ import numpy as np
 class Channel:
     def __init__(self):
         self.noise = np.random.normal(5, 1)
-    
+    # rsrp của cell đang phục vụ UE
     def rsrp(self, d):
-        return 50 - 0.5*d
+        pathloss = 32.4 + 20*np.log10(d)
+        
+        return 50 - pathloss
+
     def sinr(self, rsrp_serv, rsrp_all):
-        interf = np.max(rsrp_all)
-        return rsrp_serv - (interf + self.noise)
+        # rsrp_all là danh sách rsrp từ tất cả  cell tới UE
+        interf_list = [p for p in rsrp_all if p != rsrp_serv]
+        if len(interf_list) == 0:
+            interf = -120
+        else:
+            interf = np.max(interf_list)
+        sinr = rsrp_serv - (interf + self.noise)
+        # print(f"rsrp_Serv: {rsrp_serv} -- interf: {interf} ---- noise {self.noise}\n ")
+        return sinr 

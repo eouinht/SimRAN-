@@ -20,7 +20,7 @@ episode_rewards = []
 
 for ep in range(EPISODES):
 
-    state, _ = env.reset()
+    state, _ = env.reset(seed=0)
     ep_reward = 0
 
     for t in range(MAX_STEPS):
@@ -28,13 +28,19 @@ for ep in range(EPISODES):
             s = torch.tensor(state).float().unsqueeze(0).to(device)
             action = torch.argmax(qnet(s)).item()
 
-        state, reward, done, _, info = env.step(action)
+        state, reward, terminated, truncated, info = env.step(action)
         ep_reward += reward
 
-        if done:
+        if terminated or truncated:
             break
 
     episode_rewards.append(ep_reward)
-    print(f"[EVAL] Episode {ep:3d} | Reward: {ep_reward:8.2f}")
+    print(
+    f"[EVAL] Ep {ep:3d} | "
+    f"Reward {ep_reward:8.2f} | "
+    f"Avg SINR {info['sinr']:.2f} | "
+    f"HO {info['handover']} | "
+    f"Drop {info['drop']}"
+)
 
 print("Average reward:", np.mean(episode_rewards))

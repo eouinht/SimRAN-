@@ -6,11 +6,11 @@ import torch
 import numpy as np
 
 
-EPISODES = 500
+EPISODES = 500  
 BATCH_SIZE = 64
 BUFFER_SIZE = 100000
-TARGET_UPDATE = 10
-MAX_STEPS = 300
+TARGET_UPDATE = 100
+MAX_STEPS = 500
 
 device = "cpu"
 
