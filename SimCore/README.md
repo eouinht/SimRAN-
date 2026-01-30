@@ -27,15 +27,16 @@
 * Mobility -> HandOver trigger
 * Demand -> load stress lên scheduler
 ## 3.Channel - Kênh truyền sóng (đơn giản)
-* RSRP(Reference Signal Received Power) - Công suất tín hiệu tham chiếu nhận được: 
+* RSRP(Reference Signal Received Power) - Công suất tín hiệu tham chiếu nhận được từ 1 cell cụ thể chưa xét đến nhiễu: 
     - RSRP giảm theo khoảng cách
-    - Đây không phải công thức chuẩn 3GPP, chỉ là công thức suy hao tuyến tính đơn giản
-   $$ RSRP(d) = P_o - k *d $$
+    - Đây không phải công thức chuẩn 3GPP, chỉ là công thức suy hao đơn giản tỷ lệ theo $log_{10}$
+    - Dùng để chọn cell phục vụ cho UE, quyết định HO 
 
 * Noise 
 * Interference từ cell khác
-* SINR(Signal to Interference plus Noise Ratio): Chỉ số đo lường tín hiệu.
+* SINR(Signal to Interference plus Noise Ratio): Chỉ số đo lường chất lượng tín hiệu tính đến nhiễu.
     $$ SINR = {Psig \over [P(interf) + P(Noise)]} (dB) $$
+    - Dùng để tính thông lượng, đánh giá QoS 
 
 ## 4. Association - Serving cell & Handover
 * Agent có quyền quyết định HO hay không
