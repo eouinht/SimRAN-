@@ -8,23 +8,20 @@ class RANEnv(gym.Env):
     def __init__(self, config = SimConfig):
         super().__init__()
         self.config = config
-        self.sim = SimCore(config)
+        self.sim = SimCore(self.config)
         
         self.action_space = spaces.MultiDiscrete(
             [3] * self.config.N_CELLS
         )
         
-        ue_dim = 5
+        net_dim = 3
         cell_dim = 4
         
-        obs_dim = (
-            self.cfg.N_UES * ue_dim +
-            self.cfg.N_CELLS * cell_dim
-        )
+        obs_dim = (self.cfg.N_CELLS * cell_dim + net_dim)
         
         self.observation_space = spaces.Box(
-            low=-1e9,
-            high=1e9,
+            low=-1e6,
+            high=1e6,
             shape=(obs_dim,),
             dtype=np.float32
         )
@@ -34,11 +31,11 @@ class RANEnv(gym.Env):
     def reset(self, seed = None, options = None):
         super().reset(seed=seed)
 
-        self.sim = SimCore(self.cfg)
+        self.sim = SimCore(self.config)
         self.steps = 0
 
         state, _, _, _ = self.sim.step(
-            np.zeros(self.cfg.N_CELLS)
+            np.zeros(self.config.N_CELLS)
         )
 
         return state, {}
@@ -48,10 +45,11 @@ class RANEnv(gym.Env):
         # Decode {0,1,2} → {-1,0,1}
         real_action = action - 1
 
-        state, reward, done, info = self.sim.step(real_action)
+        state, reward,  terminated, info = self.sim.step(real_action)
 
         self.steps += 1
+        truncated = False
         if self.steps >= self.cfg.MAX_STEPS:
-            done = True
+            truncated  = True
 
-        return state, reward, done, False, info
+        return state, reward, terminated, truncated, info

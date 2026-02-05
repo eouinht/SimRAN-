@@ -9,7 +9,8 @@ class SimCore:
     def __init__(self, config):
         self.config = config
         self.channel = Channel(config)
-        
+        self.network = Network(config)
+
         # Khoi Tao Cell
         self.cells = []
         r = config.AREA_SIZE / 3
@@ -57,10 +58,9 @@ class SimCore:
                 self.config.TX_POWER_MACRO
             )
 
-        # ---- Clear old connections ----
+       
         for cell in self.cells:
-            cell.connected_ues = []
-            cell.prb_usage = 0.0
+            cell.reset()
 
         # ---- Association ----
         for ue in self.ues:
@@ -77,7 +77,6 @@ class SimCore:
                 if sinr > best_sinr:
                     best_sinr = sinr
                     best_cell = cell
-
                     ue.sinr = sinr
                     ue.rsrp = rsrp
                     ue.rsrq = rsrq
@@ -88,18 +87,12 @@ class SimCore:
         # ---- Load + throughput ----
         for cell in self.cells:
 
-            cell.prb_usage = 0.0
-            cell.total_traffic = 0.0
-            sinrs, rsrps, rsrqs = [], [], []
-
             if len(cell.connected_ues) == 0:
-                cell.load = 0.0
-                cell.avg_sinr = 0.0
-                cell.avg_rsrp = 0.0
-                cell.avg_rsrq = 0.0
                 continue
 
-            prb_ue = cell.max_prb / len(cell.connected_ues)
+            prb_per_ue = cell.max_prb / len(cell.connected_ues)
+
+            sinrs, rsrps, rsrqs = [], [], []
 
             for ue_id in cell.connected_ues:
                 ue = self.ues[ue_id]
@@ -108,11 +101,11 @@ class SimCore:
                 ue.traffic = demand
 
                 ue.throughput = self.compute_throughput(
-                    ue.sinr, prb_ue
+                    ue.sinr, prb_per_ue
                 )
 
+                cell.prb_usage += prb_per_ue
                 cell.total_traffic += demand
-                cell.prb_usage += prb_ue
 
                 sinrs.append(ue.sinr)
                 rsrps.append(ue.rsrp)
@@ -121,10 +114,11 @@ class SimCore:
             cell.prb_usage = min(cell.prb_usage, cell.max_prb)
             cell.load = cell.prb_usage / cell.max_prb
 
-            cell.avg_sinr = np.mean(sinrs)
-            cell.avg_rsrp = np.mean(rsrps)
-            cell.avg_rsrq = np.mean(rsrqs)
-         # ---- Network metrics ----
+            cell.avg_sinr = float(np.mean(sinrs))
+            cell.avg_rsrp = float(np.mean(rsrps))
+            cell.avg_rsrq = float(np.mean(rsrqs))
+         
+        # ---- Network metrics ----
         self.net_metrics = self.network.compute(self.ues, self.cells)
               
         state = self.get_state()
@@ -137,7 +131,7 @@ class SimCore:
 
     def compute_throughput(self, sinr, prb):
         spectral_eff = np.log2(1 + 10**(sinr/10))
-        return prb * self.cfg.PRBBW * spectral_eff
+        return prb * self.config.PRBBW * spectral_eff
 
     def get_state(self):
 
