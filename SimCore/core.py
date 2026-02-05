@@ -2,7 +2,7 @@ import numpy as np
 from .channel import Channel
 from .ue import UE
 from .cell import Cell
-
+from .network import Network
 
 class SimCore:
 
@@ -21,7 +21,7 @@ class SimCore:
                 c + r*np.cos(angle),
                 c + r*np.sin(angle)
             ])
-            cell = Cell(i, pos, config.INIT_TX_POWER)
+            cell = Cell(i, pos, config.INIT_TX_POWER, config.MAX_PRB)
             self.cells.append(cell)
 
         # Khoi tao UE
@@ -38,6 +38,7 @@ class SimCore:
                 )
             )
             
+        self.net_metrics = {} 
         self.time = 0   
          
     def step(self, action):
@@ -83,24 +84,49 @@ class SimCore:
 
             ue.serving_cell = best_cell.id
             best_cell.connected_ues.append(ue.id)
-
+        
         # ---- Load + throughput ----
         for cell in self.cells:
+
+            cell.prb_usage = 0.0
+            cell.total_traffic = 0.0
+            sinrs, rsrps, rsrqs = [], [], []
+
             if len(cell.connected_ues) == 0:
+                cell.load = 0.0
+                cell.avg_sinr = 0.0
+                cell.avg_rsrp = 0.0
+                cell.avg_rsrq = 0.0
                 continue
-            prb_ue = cell.max_prb / len(cell.conneted_ues)
-            for ue_id in cell.connectedd_ues:
+
+            prb_ue = cell.max_prb / len(cell.connected_ues)
+
+            for ue_id in cell.connected_ues:
                 ue = self.ues[ue_id]
+
                 demand = np.random.poisson(self.config.TRAFFIC_LAMBDA)
                 ue.traffic = demand
+
                 ue.throughput = self.compute_throughput(
                     ue.sinr, prb_ue
                 )
+
+                cell.total_traffic += demand
                 cell.prb_usage += prb_ue
-            
+
+                sinrs.append(ue.sinr)
+                rsrps.append(ue.rsrp)
+                rsrqs.append(ue.rsrq)
+
             cell.prb_usage = min(cell.prb_usage, cell.max_prb)
             cell.load = cell.prb_usage / cell.max_prb
-                  
+
+            cell.avg_sinr = np.mean(sinrs)
+            cell.avg_rsrp = np.mean(rsrps)
+            cell.avg_rsrq = np.mean(rsrqs)
+         # ---- Network metrics ----
+        self.net_metrics = self.network.compute(self.ues, self.cells)
+              
         state = self.get_state()
         reward = self.compute_reward()
         done = False
@@ -119,28 +145,31 @@ class SimCore:
 
         # Sim 
         state.extend([
-            self.time,
+            self.time/self.config.MAX_TIME,
             self.config.N_CELLS,
             self.config.N_UES
         ])
+        # Network-level
+        state.extend([
+            self.net_metrics["totalTraffic"],
+            self.net_metrics["connectedUEs"] / self.config.N_UES,
+            self.net_metrics["maxPrbUsage"],
+            self.net_metrics["totalTxPower"]
+        ])
 
-        # UE
-        for ue in self.ues:
-            state.extend([
-                ue.sinr,
-                ue.rsrp,
-                ue.rsrq,
-                ue.throughput,
-                ue.serving_cell
-            ])
-
-        # Cell 
+        # ---- Cell-level ----
         for cell in self.cells:
             state.extend([
-                cell.tx_power,
+                (cell.tx_power - self.config.TX_POWER_SMALL) /
+                (self.config.TX_POWER_MACRO - self.config.TX_POWER_SMALL),
+
+                cell.prb_usage / cell.max_prb,
+                len(cell.connected_ues) / self.config.N_UES,
                 cell.load,
-                cell.prb_usage,
-                len(cell.connected_ues)
+                cell.avg_rsrp,
+                cell.avg_rsrq,
+                cell.avg_sinr,
+                cell.total_traffic
             ])
 
         return np.array(state, dtype=np.float32)
