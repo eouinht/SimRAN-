@@ -1,22 +1,20 @@
 import numpy as np
+from config import SimConfig
 
 class Association:
-    def __init__(self, n_cells):
+    def __init__(self):
         self.serving = None
-    def step(self, action, rsrp):
-        ho = 0
-        best = np.argmax(rsrp)
-        # Neu chua co serving cell
+
+    def step(self, rsrp_vec):
+
+        best = np.argmax(rsrp_vec)
+
         if self.serving is None:
             self.serving = best
-            return self.serving, 0
-        
-        # Neu yeu ca HO
-        if action["ho"] == 1:
-            if rsrp[best] - rsrp[self.serving] > 1.0:
-          
-                self.serving = best
-                ho = 1
-        return self.serving, ho
-    
-        
+            return best,0
+
+        if rsrp_vec[best] - rsrp_vec[self.serving] > SimConfig.HYSTERESIS:
+            self.serving = best
+            return best,1
+
+        return self.serving,0

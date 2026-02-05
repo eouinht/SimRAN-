@@ -1,19 +1,18 @@
 import numpy as np
+import math
+
 class Topology:
-    def __init__(self, n_cells=10, isd=200):
-        self.n_cells = n_cells
-        self.isd = isd 
-        self.position = np.arange(n_cells)*isd
-        self.min_x = self.position[0]
-        self.max_x = self.position[-1]
-    def wrap(self, position):
-        L = self.max_x
-        if position < self.min_x:
-            return position + L
-        if position > self.max_x:
-            return position - L
-        return position      
-        
-    def move(self, position):
-        return self.wrap(position)
-        
+    def __init__(self, n_cells, area=1000):
+        self.macro_pos = np.array([[0.0, 0.0]])
+
+        self.small_pos = []
+        for i in range(5):
+            ang = i * 2*math.pi / 5
+            self.small_pos.append([
+                400*np.cos(ang),
+                400*np.sin(ang)
+            ])
+
+        self.small_pos = np.array(self.small_pos)
+
+        self.all_pos = np.vstack([self.macro_pos, self.small_pos])
